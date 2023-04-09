@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import os
 import sqlite3
 import unittest
+import numpy as np
 
 def load_rest_data(db):
     conn = sqlite3.connect(db)
@@ -54,7 +55,10 @@ def plot_rest_categories(db):
     plt.barh(categories, counts)
     plt.xlabel('Number of Restaurants')
     plt.ylabel('Restaurant Categories')
-    plt.title('Number of Restaurants per Category')
+    plt.title('Types of Restaurant on South University Ave')
+    max_count = max(counts)
+    plt.xticks(np.arange(0, max_count + 1, 1))
+
     plt.tight_layout()
     plt.show()
 
@@ -67,29 +71,18 @@ print(result)
 
 def find_rest_in_building(building_num, db):
     conn = sqlite3.connect(db)
-    cursor = conn.cursor()
+    curs = conn.cursor()
 
-    query = """
-    SELECT r.name, r.rating
-    FROM restaurants r
-    JOIN buildings b ON r.building_id = b.id
-    WHERE b.building = ?
-    ORDER BY r.rating DESC
-    """
-
-    cursor.execute(query, (building_num,))
-    results = cursor.fetchall()
+    results = curs.execute("SELECT r.name, r.rating FROM restaurants r JOIN buildings b ON r.building_id = b.id WHERE b.building = ? ORDER BY r.rating DESC", (building_num,)).fetchall()
 
     restaurant_names = []
     for row in results:
         restaurant_names.append(row[0])
 
-    conn.close()
     return restaurant_names
 
-building_number = 1140
-db_file = 'South_U_Restaurants.db'
-restaurants = find_rest_in_building(building_number, db_file)
+
+restaurants = find_rest_in_building(1140, 'South_U_Restaurants.db')
 print(restaurants)
 
 '''
@@ -101,7 +94,55 @@ print(restaurants)
 
 #EXTRA CREDIT
 def get_highest_rating(db): #Do this through DB as well
-    """
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+
+    category_results = curs.execute("SELECT c.category, ROUND(AVG(r.rating), 1) as avg_rating FROM restaurants r JOIN categories c ON r.category_id = c.id GROUP BY c.category ORDER BY avg_rating").fetchall()
+    
+    categories = []
+    category_ratings = []
+    for result in category_results:
+        categories.append(result[0])
+        category_ratings.append(result[1])
+
+    building_results = curs.execute("SELECT b.building, ROUND(AVG(r.rating), 1) as avg_rating FROM restaurants r JOIN buildings b ON r.building_id = b.id GROUP BY b.building ORDER BY avg_rating").fetchall()
+
+    buildings = []
+    building_ratings = []
+    for result in building_results:
+        buildings.append(result[0])
+        building_ratings.append(result[1])
+
+    highest_rated_category = category_results[-1]
+    highest_rated_building = building_results[-1]
+
+    plt.figure(figsize=(8, 8))
+
+    plt.subplot(2, 1, 1)
+    plt.barh(categories, category_ratings)
+    plt.xlim(0, 5)
+    plt.xlabel('Ratings')
+    plt.ylabel('Categories')
+    plt.title('Average Restaurant Ratings by Category')
+
+    plt.subplot(2, 1, 2)
+    plt.barh(range(len(buildings)), building_ratings)
+    plt.yticks(range(len(buildings)), buildings)  # Update the yticks to show building numbers
+    plt.xlim(0, 5)
+    plt.title('Average Restaurant Ratings By Building')
+    plt.ylabel('Buildings')
+    plt.xlabel('Ratings')
+
+    plt.tight_layout()
+    plt.show()
+
+    print([highest_rated_category, highest_rated_building])
+    return [highest_rated_category, highest_rated_building]
+
+
+get_highest_rating('South_U_Restaurants.db')
+
+"""
     This function return a list of two tuples. The first tuple contains the highest-rated restaurant category 
     and the average rating of the restaurants in that category, and the second tuple contains the building number 
     which has the highest rating of restaurants and its average rating.
@@ -110,8 +151,9 @@ def get_highest_rating(db): #Do this through DB as well
     along the y-axis and their ratings along the x-axis in descending order (by rating).
     The second bar chart displays the buildings along the y-axis and their ratings along the x-axis 
     in descending order (by rating).
-    """
-    pass
+"""
+
+
 
 #Try calling your functions here
 def main():
