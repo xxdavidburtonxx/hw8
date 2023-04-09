@@ -1,7 +1,8 @@
-# Your name: 
-# Your student id:
-# Your email:
+# Your name: David Burton
+# Your student id: 3307 3782
+# Your email: dcburton@umich.edu
 # List who you have worked with on this homework:
+
 
 import matplotlib.pyplot as plt
 import os
@@ -9,21 +10,60 @@ import sqlite3
 import unittest
 
 def load_rest_data(db):
-    """
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+
+    results = curs.execute("SELECT r.name, r.category_id, b.building, r.rating, c.category FROM restaurants r JOIN categories c ON r.category_id = c.id JOIN buildings b ON r.building_id = b.id").fetchall()
+
+    nested_dict = {}
+    for row in results:
+        name, category_id, building, rating, category = row
+        nested_dict[name] = {
+            "category": category,
+            "building": building,
+            "rating": rating
+        }
+
+    print(nested_dict)
+    return nested_dict
+
+load_rest_data('South_U_Restaurants.db')
+
+"""
     This function accepts the file name of a database as a parameter and returns a nested
     dictionary. Each outer key of the dictionary is the name of each restaurant in the database, 
     and each inner key is a dictionary, where the key:value pairs should be the category, 
     building, and rating for the restaurant.
-    """
-    pass
+"""
+
 
 def plot_rest_categories(db):
-    """
-    This function accepts a file name of a database as a parameter and returns a dictionary. The keys should be the
-    restaurant categories and the values should be the number of restaurants in each category. The function should
-    also create a bar chart with restaurant categories and the count of number of restaurants in each category.
-    """
-    pass
+    conn = sqlite3.connect(db)
+    curs = conn.cursor()
+
+    results = curs.execute("SELECT c.category, COUNT(*) as count FROM restaurants r JOIN categories c ON r.category_id = c.id GROUP BY c.category ORDER BY count").fetchall()
+
+    category_count = {}
+    for row in results:
+        category, count = row
+        category_count[category] = count
+
+    categories = list(category_count.keys())
+    counts = list(category_count.values())
+
+    plt.barh(categories, counts)
+    plt.xlabel('Number of Restaurants')
+    plt.ylabel('Restaurant Categories')
+    plt.title('Number of Restaurants per Category')
+    plt.tight_layout()
+    plt.show()
+
+    return category_count
+
+result = plot_rest_categories('South_U_Restaurants.db')
+print(result)
+
+
 
 def find_rest_in_building(building_num, db):
     '''
